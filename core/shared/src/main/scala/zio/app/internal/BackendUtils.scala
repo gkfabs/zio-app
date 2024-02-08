@@ -2,10 +2,8 @@ package zio.app.internal
 
 import boopickle.CompositePickler
 import boopickle.Default._
-import io.netty.buffer.Unpooled
 import io.netty.handler.codec.http.{HttpHeaderNames, HttpHeaderValues}
 import zio.http._
-import zio.http.model._
 import zio._
 import zio.stream.{UStream, ZStream}
 
@@ -24,72 +22,77 @@ object BackendUtils {
     service: String,
     method: String,
     call: A => ZIO[R, E, B]
-  ): HttpApp[R, Throwable] = {
+  ): HttpApp[R] = {
     val service0 = urlEncode(service)
     val method0  = method
-    Http.collectZIO { case post @ Method.POST -> !! / `service0` / `method0` =>
-      post.body.asArray.orDie.flatMap { body =>
-        val byteBuffer = ByteBuffer.wrap(body)
-        val unpickled  = Unpickle[A].fromBytes(byteBuffer)
-        call(unpickled)
-          .map(ZioResponse.succeed)
-          .catchAllCause(causeToResponseZio[E](_))
-          .map(pickle[ZioResponse[E, B]](_))
-      }
-    }
+    Routes((Method.POST / `service0` / `method0`) -> handler { (request: Request) =>
+      request.body.asArray
+        .map(body => ByteBuffer.wrap(body))
+        .map(byteBuffer => Unpickle[A].fromBytes(byteBuffer))
+        .flatMap(unpickled => call(unpickled))
+        .map(ZioResponse.succeed)
+        .catchAll { case throwable: Throwable =>
+          ZIO.succeed(ZioResponse.die(throwable))
+        }
+        .catchAllCause(causeToResponseZio[E](_))
+        .map(pickle[ZioResponse[E, B]](_))
+    }).toHttpApp
   }
 
   def makeRouteNullary[R, E: Pickler, A: Pickler](
     service: String,
     method: String,
     call: ZIO[R, E, A]
-  ): HttpApp[R, Throwable] = {
+  ): HttpApp[R] = {
     val service0 = urlEncode(service)
     val method0  = method
-    Http.collectZIO { case Method.GET -> !! / `service0` / `method0` =>
+    Routes((Method.GET / `service0` / `method0`) -> handler { (request: Request) =>
       call
         .map(ZioResponse.succeed)
         .catchAllCause(causeToResponseZio[E](_))
         .map(pickle[ZioResponse[E, A]](_))
-    }
+    }).toHttpApp
   }
 
   def makeRouteStream[R, E: Pickler, A: Pickler, B: Pickler](
     service: String,
     method: String,
     call: A => ZStream[R, E, B]
-  ): HttpApp[R, Nothing] = {
+  ): HttpApp[R] = {
     val service0 = service
     val method0  = method
-    Http.collectZIO { case post @ Method.POST -> !! / `service0` / `method0` =>
-      post.body.asArray.orDie.flatMap { body =>
-        val byteBuffer = ByteBuffer.wrap(body)
-        val unpickled  = Unpickle[A].fromBytes(byteBuffer)
-        ZIO.environment[R].map { env =>
-          makeStreamResponse(call(unpickled), env)
+    Routes((Method.POST / `service0` / `method0`) -> handler { (request: Request) =>
+      request.body.asArray
+        .map(body => ByteBuffer.wrap(body))
+        .map(byteBuffer => Unpickle[A].fromBytes(byteBuffer))
+        .flatMap(unpickled =>
+          ZIO.environment[R].map { env =>
+            makeStreamResponse(call(unpickled), env)
+          }
+        )
+        .catchAll { case throwable: Throwable =>
+          ZIO.succeed(Response.status(Status.InternalServerError))
         }
-      }
-    }
+    }).toHttpApp
   }
 
   def makeRouteNullaryStream[R, E: Pickler, A: Pickler](
     service: String,
     method: String,
     call: ZStream[R, E, A]
-  ): HttpApp[R, Nothing] = {
+  ): HttpApp[R] = {
     val service0 = service
     val method0  = method
-    Http.collectZIO { case Method.GET -> !! / `service0` / `method0` =>
+    Routes((Method.GET / `service0` / `method0`) -> handler { (request: Request) =>
       ZIO.environment[R].map { env =>
         makeStreamResponse(call, env)
       }
-    }
+    }).toHttpApp
   }
 
   private def pickle[A: Pickler](value: A): Response = {
     val bytes: ByteBuffer = Pickle.intoBytes(value)
-    val byteBuf           = Unpooled.wrappedBuffer(bytes)
-    val body              = Body.fromByteBuf(byteBuf)
+    val body              = Body.fromChunk(Chunk.fromByteBuffer(bytes))
 
     Response(status = Status.Ok, headers = Headers(bytesContent), body = body)
   }

@@ -9,7 +9,7 @@ case class Person(name: String, age: Int)
 case class Dog(name: String, age: Int)
 
 object Backend extends ZIOAppDefault {
-  val httpApp: HttpApp[ExampleService with ParameterizedService[Int], Throwable] =
+  val httpApp: HttpApp[ExampleService with ParameterizedService[Int]] =
     DeriveRoutes.gen[ExampleService] ++ DeriveRoutes.gen[ParameterizedService[Int]]
 
   override def run = (for {
@@ -18,8 +18,9 @@ object Backend extends ZIOAppDefault {
     _ <- Server
            .serve(httpApp)
            .provideSome[ExampleService with ParameterizedService[Int]](
-             ServerConfig.live(ServerConfig.default.port(port)),
-             Server.live
+             Server.defaultWith { config =>
+               config.port(port)
+             }
            )
   } yield ())
     .provide(

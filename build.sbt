@@ -38,11 +38,11 @@ val postgresVersion      = "42.5.1"
 val quillVersion         = "4.6.0"
 val scalaJavaTimeVersion = "2.4.0"
 val sttpVersion          = "3.7.1"
-val zioHttpVersion       = "0.0.3"
+val zioHttpVersion       = "3.0.0-RC4"
 val zioJsonVersion       = "0.3.0-RC3"
 val zioNioVersion        = "2.0.1"
 val zioProcessVersion    = "0.7.1"
-val zioVersion           = "2.0.6"
+val zioVersion           = "2.0.21"
 val zioQueryVersion      = "0.3.4"
 
 val sharedSettings = Seq(

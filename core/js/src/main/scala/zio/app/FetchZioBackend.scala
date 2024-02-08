@@ -34,8 +34,8 @@ object ZioWebsockets {
           .repeatZIO(ws.receive().flatMap {
             case WebSocketFrame.Close(_, _)   => onClose
             case WebSocketFrame.Ping(payload) => ws.send(WebSocketFrame.Pong(payload)).as(None)
-            case WebSocketFrame.Pong(_)       => ZIO.succeedNow(None)
-            case in: WebSocketFrame.Data[_]   => ZIO.succeedNow(Some(in))
+            case WebSocketFrame.Pong(_)       => ZIO.succeed(None)
+            case in: WebSocketFrame.Data[_]   => ZIO.succeed(Some(in))
           })
           .catchSome { case _: WebSocketClosed => ZStream.fromZIO(onClose) }
           .interruptWhen(wsClosed)
@@ -111,7 +111,7 @@ object FetchZioBackend {
 }
 
 object ZioTaskMonadAsyncError extends MonadAsyncError[Task] {
-  override def unit[T](t: T): Task[T] = ZIO.succeedNow(t)
+  override def unit[T](t: T): Task[T] = ZIO.succeed(t)
 
   override def map[T, T2](fa: Task[T])(f: T => T2): Task[T2] = fa.map(f)
 

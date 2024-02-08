@@ -6,5 +6,5 @@ import zio.app.internal.macros.Macros
 import scala.language.experimental.macros
 
 object DeriveRoutes {
-  def gen[Service]: HttpApp[Service, Throwable] = macro Macros.routes_impl[Service]
+  def gen[Service]: HttpApp[Service] = macro Macros.routes_impl[Service]
 }
