@@ -25,7 +25,7 @@ object ZioStreams extends ZioStreams
 object ZioWebsockets {
   def compilePipe(
     ws: WebSocket[Task],
-    pipe: Stream[Throwable, WebSocketFrame.Data[_]] => Stream[Throwable, WebSocketFrame],
+    pipe: Stream[Throwable, WebSocketFrame.Data[_]] => Stream[Throwable, WebSocketFrame]
   ): Task[Unit] =
     Promise.make[Throwable, Unit].flatMap { wsClosed =>
       val onClose = ZIO.attempt(wsClosed.succeed(())).as(None)
@@ -42,7 +42,7 @@ object ZioWebsockets {
           .flatMap {
             case None    => ZStream.empty
             case Some(f) => ZStream.succeed(f)
-          },
+          }
       )
         .map(ws.send(_))
         .runDrain
@@ -54,13 +54,13 @@ class FetchZioBackend private (fetchOptions: FetchOptions, customizeRequest: Fet
     extends AbstractFetchBackend[Task, ZioStreams, ZioStreams with WebSockets](
       fetchOptions,
       customizeRequest,
-      ZioTaskMonadAsyncError,
+      ZioTaskMonadAsyncError
     ) {
 
   override val streams: ZioStreams = ZioStreams
 
-  override protected def addCancelTimeoutHook[T](result: Task[T], cancel: () => Unit): Task[T] =
-    result.ensuring(ZIO.succeed(cancel()))
+  override protected def addCancelTimeoutHook[T](result: Task[T], cancel: () => Unit, cleanup: () => Unit): Task[T] =
+    result.ensuring(ZIO.succeed(cancel()) *> ZIO.succeed(cleanup()))
 
   override protected def handleStreamBody(s: Stream[Throwable, Array[Byte]]): Task[js.UndefOr[BodyInit]] = {
     // as no browsers support a ReadableStream request body yet we need to create an in memory array
@@ -75,7 +75,7 @@ class FetchZioBackend private (fetchOptions: FetchOptions, customizeRequest: Fet
   }
 
   override protected def handleResponseAsStream(
-    response: dom.Response,
+    response: dom.Response
   ): Task[(Stream[Throwable, Array[Byte]], () => Task[Unit])] =
     ZIO.attempt {
       lazy val reader = response.body.getReader()
@@ -93,7 +93,7 @@ class FetchZioBackend private (fetchOptions: FetchOptions, customizeRequest: Fet
 
   override protected def compileWebSocketPipe(
     ws: WebSocket[Task],
-    pipe: Stream[Throwable, WebSocketFrame.Data[_]] => Stream[Throwable, WebSocketFrame],
+    pipe: Stream[Throwable, WebSocketFrame.Data[_]] => Stream[Throwable, WebSocketFrame]
   ): Task[Unit] =
     ZioWebsockets.compilePipe(ws, pipe)
 
@@ -105,7 +105,7 @@ class FetchZioBackend private (fetchOptions: FetchOptions, customizeRequest: Fet
 object FetchZioBackend {
   def apply(
     fetchOptions: FetchOptions = FetchOptions.Default,
-    customizeRequest: FetchRequest => FetchRequest = identity,
+    customizeRequest: FetchRequest => FetchRequest = identity
   ): SttpBackend[Task, ZioStreams with WebSockets] =
     new FetchZioBackend(fetchOptions, customizeRequest)
 }

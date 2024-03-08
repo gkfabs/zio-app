@@ -181,7 +181,7 @@ object Frontend {
 
   val $fileSystem = stateVar.signal.map(_.fileSystemState)
 
-  def fileSystem: Div = {
+  def fileSystem: Div =
     div(
       fontSize("16px"),
       child.text <-- $fileSystem.map(_.pwd),
@@ -200,14 +200,13 @@ object Frontend {
         )
       }
     )
-  }
 
   def view: Div =
     div(
       cls("container"),
       header,
       sbtOutputs,
-      windowEvents.onKeyDown --> {
+      windowEvents(_.onKeyDown) --> {
         _.key match {
           case "f" => appStateVar.update(_.focusFrontend)
           case "b" => appStateVar.update(_.focusBackend)

@@ -9,7 +9,7 @@ import zio.app.DeriveClient
 
 object Frontend {
   def main(args: Array[String]): Unit = {
-    val _ = documentEvents.onDomContentLoaded.foreach { _ =>
+    val _ = documentEvents(_.onDomContentLoaded).foreach { _ =>
       val appContainer = dom.document.querySelector("#app")
       appContainer.innerHTML = ""
       val _ = render(appContainer, view)
@@ -66,5 +66,7 @@ object Frontend {
 
   implicit val chunkSplittable: Splittable[Chunk] = new Splittable[Chunk] {
     override def map[A, B](inputs: Chunk[A], project: A => B): Chunk[B] = inputs.map(project)
+
+    override def empty[A]: Chunk[A] = Chunk.empty
   }
 }
