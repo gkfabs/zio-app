@@ -5,6 +5,7 @@ import boopickle.Default._
 import io.netty.handler.codec.http.{HttpHeaderNames, HttpHeaderValues}
 import zio.http._
 import zio._
+import zio.schema.codec.JsonCodec.schemaBasedBinaryCodec
 import zio.stream.{UStream, ZStream}
 
 import java.nio.ByteBuffer
@@ -22,7 +23,7 @@ object BackendUtils {
     service: String,
     method: String,
     call: A => ZIO[R, E, B]
-  ): HttpApp[R] = {
+  ): Routes[R, Nothing] = {
     val service0 = urlEncode(service)
     val method0  = method
     Routes((Method.POST / `service0` / `method0`) -> handler { (request: Request) =>
@@ -36,14 +37,14 @@ object BackendUtils {
         }
         .catchAllCause(causeToResponseZio[E](_))
         .map(pickle[ZioResponse[E, B]](_))
-    }).toHttpApp
+    })
   }
 
   def makeRouteNullary[R, E: Pickler, A: Pickler](
     service: String,
     method: String,
     call: ZIO[R, E, A]
-  ): HttpApp[R] = {
+  ): Routes[R, Nothing] = {
     val service0 = urlEncode(service)
     val method0  = method
     Routes((Method.GET / `service0` / `method0`) -> handler { (request: Request) =>
@@ -51,14 +52,14 @@ object BackendUtils {
         .map(ZioResponse.succeed)
         .catchAllCause(causeToResponseZio[E](_))
         .map(pickle[ZioResponse[E, A]](_))
-    }).toHttpApp
+    })
   }
 
   def makeRouteStream[R, E: Pickler, A: Pickler, B: Pickler](
     service: String,
     method: String,
     call: A => ZStream[R, E, B]
-  ): HttpApp[R] = {
+  ): Routes[R, Nothing] = {
     val service0 = service
     val method0  = method
     Routes((Method.POST / `service0` / `method0`) -> handler { (request: Request) =>
@@ -73,21 +74,21 @@ object BackendUtils {
         .catchAll { case throwable: Throwable =>
           ZIO.succeed(Response.status(Status.InternalServerError))
         }
-    }).toHttpApp
+    })
   }
 
   def makeRouteNullaryStream[R, E: Pickler, A: Pickler](
     service: String,
     method: String,
     call: ZStream[R, E, A]
-  ): HttpApp[R] = {
+  ): Routes[R, Nothing] = {
     val service0 = service
     val method0  = method
     Routes((Method.GET / `service0` / `method0`) -> handler { (request: Request) =>
       ZIO.environment[R].map { env =>
         makeStreamResponse(call, env)
       }
-    }).toHttpApp
+    })
   }
 
   private def pickle[A: Pickler](value: A): Response = {

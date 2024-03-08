@@ -9,14 +9,14 @@ case class Person(name: String, age: Int)
 case class Dog(name: String, age: Int)
 
 object Backend extends ZIOAppDefault {
-  val httpApp: HttpApp[ExampleService with ParameterizedService[Int]] =
+  val routes: Routes[ExampleService with ParameterizedService[Int], Nothing] =
     DeriveRoutes.gen[ExampleService] ++ DeriveRoutes.gen[ParameterizedService[Int]]
 
   override def run = (for {
     port <- System.envOrElse("PORT", "8088").map(_.toInt).orElseSucceed(8088)
     _    <- Console.printLine(s"STARTING SERVER ON PORT $port")
     _ <- Server
-           .serve(httpApp)
+           .serve(routes)
            .provideSome[ExampleService with ParameterizedService[Int]](
              Server.defaultWith { config =>
                config.port(port)

@@ -1,6 +1,6 @@
 import xerial.sbt.Sonatype.autoImport.sonatypeCredentialHost
 
-lazy val scala213 = "2.13.8"
+lazy val scala213 = "2.13.11"
 lazy val scala212 = "2.12.15"
 lazy val scala3   = "3.1.0"
 
@@ -29,21 +29,21 @@ lazy val supportedScalaVersions = List(scala213)
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-val animusVersion        = "0.2.1"
+val animusVersion        = "0.4.1"
 val boopickleVerison     = "1.4.0"
 val fansiVersion         = "0.4.0"
-val laminarVersion       = "0.14.2"
-val laminextVersion      = "0.14.3"
-val postgresVersion      = "42.5.1"
-val quillVersion         = "4.6.0"
-val scalaJavaTimeVersion = "2.4.0"
-val sttpVersion          = "3.7.1"
-val zioHttpVersion       = "3.0.0-RC4"
-val zioJsonVersion       = "0.3.0-RC3"
-val zioNioVersion        = "2.0.1"
-val zioProcessVersion    = "0.7.1"
+val laminarVersion       = "16.0.0"
+val laminextVersion      = "0.16.2"
+val postgresVersion      = "42.7.2"
+val quillVersion         = "4.8.1"
+val scalaJavaTimeVersion = "2.5.0"
+val sttpVersion          = "3.9.3"
+val zioHttpVersion       = "3.0.0-RC10"
+val zioJsonVersion       = "0.6.2"
+val zioNioVersion        = "2.0.2"
+val zioProcessVersion    = "0.7.2"
 val zioVersion           = "2.0.21"
-val zioQueryVersion      = "0.3.4"
+val zioQueryVersion      = "0.6.0"
 
 val sharedSettings = Seq(
   addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.13.2" cross CrossVersion.full),
@@ -175,7 +175,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     crossScalaVersions       := supportedScalaVersions,
     publish / skip           := false,
     semanticdbEnabled        := true,
-    semanticdbVersion        := "4.5.3", // only required for Scala 2.x,
+    semanticdbVersion        := "4.9.1", // only required for Scala 2.x,
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     resolvers ++= Seq(
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",

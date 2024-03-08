@@ -76,7 +76,7 @@ new ${serviceType.finalResultType} {
 
   // Type     -> c.WeakTypeTag
   // TypeRepr -> c.Type
-  def routes_impl[Service: c.WeakTypeTag]: c.Expr[HttpApp[Service]] = {
+  def routes_impl[Service: c.WeakTypeTag]: c.Expr[Routes[Service, Nothing]] = {
     val serviceType = c.weakTypeOf[Service]
     assertValidMethods(serviceType)
 
@@ -122,7 +122,7 @@ new ${serviceType.finalResultType} {
 
     val block = blocks.reduce((a, b) => q"$a ++ $b")
 
-    val result = c.Expr[HttpApp[Service]](q"""
+    val result = c.Expr[Routes[Service, Nothing]](q"""
 import _root_.zio.http._
 import _root_.boopickle.Default._
 import _root_.zio.app.internal.CustomPicklers._
