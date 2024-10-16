@@ -1,16 +1,15 @@
 package zio.app.cli.frontend
 
-import animus._
 import com.raquo.laminar.api.L._
 import zio.Chunk
 import zio.app.cli.protocol
 import zio.app.cli.protocol.Line
 
 case class SbtOutput(
-    $lines: Signal[Chunk[Line]],
-    $isOpen: Signal[Boolean],
-    toggleVisible: () => Unit,
-    title: String
+  $lines: Signal[Chunk[Line]],
+  $isOpen: Signal[Boolean],
+  toggleVisible: () => Unit,
+  title: String
 ) extends Component {
 
   val scrollTopVar   = Var(0.0)
@@ -27,7 +26,7 @@ case class SbtOutput(
       cursor.pointer,
       div(
         "^",
-        transform <-- $deg.spring.map { deg => s"rotate(${deg}deg)" }
+        transform <-- $deg.map(deg => s"rotate(${deg}deg)")
       ),
       onClick --> { _ => toggleVisible() }
     )
@@ -44,24 +43,24 @@ case class SbtOutput(
       cursor.pointer,
       div(
         "^",
-        transform <-- $deg.spring.map { deg => s"rotate(${deg}deg)" }
+        transform <-- $deg.map(deg => s"rotate(${deg}deg)")
       ),
       onClick --> { _ => scrollOverride.update(!_) }
     )
   }
 
-  val $headerPadding = $isOpen.map { if (_) 12.0 else 0.0 }.spring.map { p => s"${p}px 12px" }
+  val $headerPadding = $isOpen.map(if (_) 12.0 else 0.0).map(p => s"${p}px 12px")
 
   def body: HtmlElement =
     div(
       cls("sbt-output"),
-      cls.toggle("disabled") <-- $isOpen.map(!_),
+      cls("disabled") <-- $isOpen.map(!_),
       div(
         cls("sbt-output-title"),
         zIndex(10),
         div(
           title,
-          opacity <-- $isOpen.map { if (_) 1.0 else 0.5 }.spring
+          opacity <-- $isOpen.map(if (_) 1.0 else 0.5)
         ),
         div(
           display.flex,
@@ -75,7 +74,7 @@ case class SbtOutput(
         visibilityStyles,
         div(
           children <-- $rendered,
-          opacity <-- $opacity.spring
+          opacity <-- $opacity
         ),
         scrollEvents
       )
@@ -102,8 +101,7 @@ case class SbtOutput(
         diffBus.events.debounce(100) --> { diff =>
           scrollOverride.set(diff > 0)
         },
-        // TODO: Fix `step` method in animus. Make sure to check that animating is still true.
-        scrollTopVar.signal.spring --> { scrollTop =>
+        scrollTopVar.signal --> { scrollTop =>
           if (!scrollOverride.now()) {
             ref.scrollTop = scrollTop
           }
@@ -130,13 +128,12 @@ case class SbtOutput(
     )
   }
 
-  private val $height  = $isOpen.map { if (_) 200.0 else 0.0 }
-  private val $padding = $isOpen.map { if (_) 12.0 else 0.0 }
-  private val $opacity = $isOpen.map { if (_) 1.0 else 0.3 }
+  private val $height  = $isOpen.map(if (_) 200.0 else 0.0)
+  private val $padding = $isOpen.map(if (_) 12.0 else 0.0)
+  private val $opacity = $isOpen.map(if (_) 1.0 else 0.3)
 
   private val visibilityStyles: Mod[HtmlElement] = Seq(
-//    height <-- $height.spring.px,
-    paddingTop <-- $padding.spring.px,
-    paddingBottom <-- $padding.spring.px
+    paddingTop <-- $padding.map(x => s"${x}px"),
+    paddingBottom <-- $padding.map(x => s"${x}px")
   )
 }

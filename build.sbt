@@ -29,11 +29,10 @@ lazy val supportedScalaVersions = List(scala213)
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-val animusVersion        = "0.4.1"
 val boopickleVerison     = "1.4.0"
 val fansiVersion         = "0.4.0"
-val laminarVersion       = "16.0.0"
-val laminextVersion      = "0.16.2"
+val laminarVersion       = "17.1.0"
+val laminextVersion      = "0.17.0"
 val postgresVersion      = "42.7.2"
 val quillVersion         = "4.8.1"
 val scalaJavaTimeVersion = "2.5.0"
@@ -140,7 +139,6 @@ lazy val cliFrontend = project
     publish / skip                  := true,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "io.github.kitlangton"          %%% "animus"               % animusVersion,
       "com.raquo"                     %%% "laminar"              % laminarVersion,
       "io.github.cquiroz"             %%% "scala-java-time"      % scalaJavaTimeVersion,
       "io.github.cquiroz"             %%% "scala-java-time-tzdb" % scalaJavaTimeVersion,

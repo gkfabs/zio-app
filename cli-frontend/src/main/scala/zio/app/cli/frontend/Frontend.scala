@@ -1,6 +1,5 @@
 package zio.app.cli.frontend
 
-import animus._
 import boopickle.Default._
 import com.raquo.laminar.api.L._
 import io.laminext.websocket.PickleSocket.WebSocketReceiveBuilderBooPickleOps
@@ -74,17 +73,17 @@ object Frontend {
 
   object Rect {
     def styles(rect: Signal[Rect]): Mod[HtmlElement] = Seq(
-      left <-- rect.map(_.x).spring.px,
-      top <-- rect.map(_.y).spring.px,
-      width <-- rect.map(_.width).spring.px,
-      height <-- rect.map(_.height).spring.px
+      left <-- rect.map(_.x).map(x => s"${x}px"),
+      top <-- rect.map(_.y).map(x => s"${x}px"),
+      width <-- rect.map(_.width).map(x => s"${x}px"),
+      height <-- rect.map(_.height).map(x => s"${x}px")
     )
   }
 
   case class Grid(backend: HtmlElement, frontend: HtmlElement) extends Component {
     val rectVar = Var(Rect(0.0, 0.0, window.innerWidth, window.innerHeight))
 
-    val $width = rectVar.signal.map(_.width / 2).spring.px
+    val $width = rectVar.signal.map(_.width / 2).map(x => s"${x}px")
 
     case class Layout(backendRect: Rect, frontendRect: Rect)
 
@@ -185,7 +184,7 @@ object Frontend {
     div(
       fontSize("16px"),
       child.text <-- $fileSystem.map(_.pwd),
-      children <-- $fileSystem.map(_.dirs).splitTransition(identity) { (_, path, _, transition) =>
+      children <-- $fileSystem.map(_.dirs.map { path =>
         div(
           onClick --> { _ =>
             ws.sendOne(ClientCommand.ChangeDirectory(path))
@@ -194,11 +193,9 @@ object Frontend {
             cls("fs-item"),
             cursor.pointer,
             path
-          ),
-          transition.height,
-          transition.opacity
+          )
         )
-      }
+      })
     )
 
   def view: Div =
