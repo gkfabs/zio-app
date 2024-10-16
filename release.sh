@@ -1,6 +1,6 @@
 sbt cliFrontend/fullLinkJS
 cd cli-frontend
-yarn exec -- vite build
+npm install
 cd ..
 mv ./cli-frontend/dist ./cli/src/main/resources/dist
 
