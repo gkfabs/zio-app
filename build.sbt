@@ -36,7 +36,7 @@ val laminextVersion      = "0.17.0"
 val postgresVersion      = "42.7.2"
 val quillVersion         = "4.8.1"
 val scalaJavaTimeVersion = "2.5.0"
-val sttpVersion          = "3.9.3"
+val sttpVersion          = "4.0.0-M19"
 val zioHttpVersion       = "3.0.0-RC10"
 val zioJsonVersion       = "0.6.2"
 val zioNioVersion        = "2.0.2"
@@ -143,8 +143,8 @@ lazy val cliFrontend = project
       "io.github.cquiroz"             %%% "scala-java-time"      % scalaJavaTimeVersion,
       "io.github.cquiroz"             %%% "scala-java-time-tzdb" % scalaJavaTimeVersion,
       "io.laminext"                   %%% "websocket"            % laminextVersion,
-      "com.softwaremill.sttp.client3" %%% "core"                 % sttpVersion,
-      "com.softwaremill.sttp.client3" %%% "monix"                % sttpVersion
+      "com.softwaremill.sttp.client4" %%% "core"                 % sttpVersion,
+      "com.softwaremill.sttp.client4" %%% "monix"                % sttpVersion
     )
   )
   .settings(sharedSettings)
@@ -187,7 +187,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
       "dev.zio"                        %% "zio-test"       % zioVersion % Test,
       "io.suzaku"                     %%% "boopickle"      % boopickleVerison,
       "dev.zio"                        %% "zio-http"       % zioHttpVersion,
-      "com.softwaremill.sttp.client3" %%% "core"           % sttpVersion,
+      "com.softwaremill.sttp.client4" %%% "core"           % sttpVersion,
       "io.getquill"                    %% "quill-jdbc-zio" % quillVersion,
       "org.postgresql"                  % "postgresql"     % postgresVersion,
       "org.scalameta"                  %% "scalameta"      % "4.7.3"
@@ -211,8 +211,8 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.client3" %%% "core"                          % sttpVersion,
-      "com.softwaremill.sttp.client3"  %% "async-http-client-backend-zio" % sttpVersion
+      "com.softwaremill.sttp.client4" %%% "core"                          % sttpVersion,
+      "com.softwaremill.sttp.client4"  %% "async-http-client-backend-zio" % sttpVersion
     )
   )
   .jsSettings(

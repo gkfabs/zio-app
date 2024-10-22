@@ -3,9 +3,9 @@ package zio.app
 import org.scalajs.dom
 import org.scalajs.dom.{BodyInit, Request => FetchRequest}
 import sttp.capabilities.{Streams, WebSockets}
-import sttp.client3.internal.ConvertFromFuture
-//import sttp.client3.testing.SttpBackendStub
-import sttp.client3.{AbstractFetchBackend, FetchOptions, SttpBackend}
+import sttp.client4._
+import sttp.client4.fetch.{AbstractFetchBackend, FetchOptions}
+import sttp.client4.internal.ConvertFromFuture
 import sttp.monad.{Canceler, MonadAsyncError}
 import sttp.ws.{WebSocket, WebSocketClosed, WebSocketFrame}
 import zio._
@@ -15,7 +15,7 @@ import scala.concurrent.Future
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.{AB2TA, Int8Array}
 
-trait ZioStreams extends Streams[ZioStreams] {
+trait ZioStreams extends Streams[ZioStreams with WebSockets] {
   override type BinaryStream = Stream[Throwable, Array[Byte]]
   override type Pipe[A, B]   = Stream[Throwable, A] => Stream[Throwable, B]
 }
@@ -51,11 +51,12 @@ object ZioWebsockets {
 }
 
 class FetchZioBackend private (fetchOptions: FetchOptions, customizeRequest: FetchRequest => FetchRequest)
-    extends AbstractFetchBackend[Task, ZioStreams, ZioStreams with WebSockets](
+    extends AbstractFetchBackend[Task, ZioStreams with WebSockets](
       fetchOptions,
       customizeRequest,
       ZioTaskMonadAsyncError
-    ) {
+    )
+    with StreamBackend[Task, ZioStreams with WebSockets] {
 
   override val streams: ZioStreams = ZioStreams
 
@@ -106,7 +107,7 @@ object FetchZioBackend {
   def apply(
     fetchOptions: FetchOptions = FetchOptions.Default,
     customizeRequest: FetchRequest => FetchRequest = identity
-  ): SttpBackend[Task, ZioStreams with WebSockets] =
+  ): StreamBackend[Task, ZioStreams with WebSockets] =
     new FetchZioBackend(fetchOptions, customizeRequest)
 }
 

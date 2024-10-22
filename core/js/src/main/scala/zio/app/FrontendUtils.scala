@@ -3,7 +3,9 @@ package zio.app
 import boopickle.Default._
 import boopickle.{CompositePickler, UnpickleState}
 import org.scalajs.dom.RequestMode
-import sttp.client3._
+import sttp.model._
+import sttp.client4._
+import sttp.client4.fetch.FetchOptions
 import sttp.model.Uri
 import zio._
 import zio.app.internal.ZioResponse
@@ -35,7 +37,10 @@ object FrontendUtils {
   ): IO[E, A] =
     fetchRequest[E, A](bytesRequest.post(apiUri(config).addPath(service, method)).body(value), config)
 
-  def fetchRequest[E: Pickler, A: Pickler](request: Request[Array[Byte], Any], config: ClientConfig): IO[E, A] =
+  def fetchRequest[E: Pickler, A: Pickler](
+    request: StreamRequest[Array[Byte], Any],
+    config: ClientConfig
+  ): IO[E, A] =
     sttpBackend
       .send(request.header("authorization", config.authToken.map("Bearer " + _)))
       .orDie
@@ -64,7 +69,7 @@ object FrontendUtils {
   ): Stream[E, A] =
     fetchStreamRequest[E, A](basicRequest.post(apiUri(config).addPath(service, method)).body(value))
 
-  def fetchStreamRequest[E: Pickler, A: Pickler](request: Request[Either[String, String], Any]): Stream[E, A] =
+  def fetchStreamRequest[E: Pickler, A: Pickler](request: Request[Either[String, String]]): Stream[E, A] =
     ZStream.unwrap {
       request
         .response(asStreamAlwaysUnsafe(ZioStreams))
@@ -85,12 +90,12 @@ object FrontendUtils {
       }
 
   private val bytesRequest =
-    RequestT[Empty, Array[Byte], Any](
-      None,
-      None,
+    StreamRequest[Array[Byte], Any](
+      Method.GET,
+      Uri("127.0.0.1"),
       NoBody,
       Vector(),
-      asByteArrayAlways,
+      StreamResponseAs[Array[Byte], Any](ResponseAsByteArray),
       RequestOptions(
         followRedirects = true,
         DefaultReadTimeout,
