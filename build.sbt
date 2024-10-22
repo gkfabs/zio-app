@@ -29,14 +29,13 @@ lazy val supportedScalaVersions = List(scala213)
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-val boopickleVerison     = "1.4.0"
+val boopickleVersion     = "1.5.0"
 val fansiVersion         = "0.4.0"
 val laminarVersion       = "17.1.0"
 val laminextVersion      = "0.17.0"
 val postgresVersion      = "42.7.2"
 val quillVersion         = "4.8.1"
 val scalaJavaTimeVersion = "2.5.0"
-val sttpVersion          = "4.0.0-M19"
 val zioHttpVersion       = "3.0.0-RC10"
 val zioJsonVersion       = "0.6.2"
 val zioNioVersion        = "2.0.2"
@@ -52,8 +51,9 @@ val sharedSettings = Seq(
     "Sonatype OSS Snapshots s01" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
   ),
   libraryDependencies ++= Seq(
-    "io.suzaku"   %%% "boopickle"   % boopickleVerison,
+    "io.suzaku"   %%% "boopickle"   % boopickleVersion,
     "dev.zio"     %%% "zio"         % zioVersion,
+    "dev.zio"     %%% "zio-http"    % zioHttpVersion,
     "dev.zio"     %%% "zio-streams" % zioVersion,
     "dev.zio"     %%% "zio-test"    % zioVersion % Test,
     "com.lihaoyi" %%% "fansi"       % fansiVersion
@@ -139,12 +139,10 @@ lazy val cliFrontend = project
     publish / skip                  := true,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "com.raquo"                     %%% "laminar"              % laminarVersion,
-      "io.github.cquiroz"             %%% "scala-java-time"      % scalaJavaTimeVersion,
-      "io.github.cquiroz"             %%% "scala-java-time-tzdb" % scalaJavaTimeVersion,
-      "io.laminext"                   %%% "websocket"            % laminextVersion,
-      "com.softwaremill.sttp.client4" %%% "core"                 % sttpVersion,
-      "com.softwaremill.sttp.client4" %%% "monix"                % sttpVersion
+      "com.raquo"         %%% "laminar"              % laminarVersion,
+      "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion,
+      "io.laminext"       %%% "websocket"            % laminextVersion
     )
   )
   .settings(sharedSettings)
@@ -180,17 +178,16 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
       "Sonatype OSS Snapshots s01" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
     ),
     libraryDependencies ++= Seq(
-      "org.scala-lang"                  % "scala-reflect"  % scalaVersion.value,
-      "dev.zio"                       %%% "zio"            % zioVersion,
-      "dev.zio"                       %%% "zio-streams"    % zioVersion,
-      "dev.zio"                        %% "zio-query"      % zioQueryVersion,
-      "dev.zio"                        %% "zio-test"       % zioVersion % Test,
-      "io.suzaku"                     %%% "boopickle"      % boopickleVerison,
-      "dev.zio"                        %% "zio-http"       % zioHttpVersion,
-      "com.softwaremill.sttp.client4" %%% "core"           % sttpVersion,
-      "io.getquill"                    %% "quill-jdbc-zio" % quillVersion,
-      "org.postgresql"                  % "postgresql"     % postgresVersion,
-      "org.scalameta"                  %% "scalameta"      % "4.7.3"
+      "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
+      "dev.zio"      %%% "zio"            % zioVersion,
+      "dev.zio"      %%% "zio-streams"    % zioVersion,
+      "dev.zio"       %% "zio-query"      % zioQueryVersion,
+      "dev.zio"       %% "zio-test"       % zioVersion % Test,
+      "io.suzaku"    %%% "boopickle"      % boopickleVersion,
+      "dev.zio"       %% "zio-http"       % zioHttpVersion,
+      "io.getquill"   %% "quill-jdbc-zio" % quillVersion,
+      "org.postgresql" % "postgresql"     % postgresVersion,
+      "org.scalameta" %% "scalameta"      % "4.7.3"
     )
   )
 
@@ -207,12 +204,6 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
       "dev.zio" %%% "zio"      % zioVersion,
       "dev.zio"  %% "zio-test" % zioVersion % Test,
       "dev.zio"  %% "zio-http" % zioHttpVersion
-    )
-  )
-  .jvmSettings(
-    libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.client4" %%% "core"                          % sttpVersion,
-      "com.softwaremill.sttp.client4"  %% "async-http-client-backend-zio" % sttpVersion
     )
   )
   .jsSettings(

@@ -1,13 +1,13 @@
 package zio.app
 
-import sttp.model.Uri
+import zio.http.Path
 
 final case class ClientConfig(
   authToken: Option[String],
-  root: Uri.AbsolutePath
+  root: Path
 )
 
 object ClientConfig {
   val empty: ClientConfig =
-    ClientConfig(None, Uri.AbsolutePath(Seq.empty))
+    ClientConfig(None, Path.empty)
 }

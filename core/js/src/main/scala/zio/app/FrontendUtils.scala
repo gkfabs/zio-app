@@ -3,31 +3,27 @@ package zio.app
 import boopickle.Default._
 import boopickle.{CompositePickler, UnpickleState}
 import org.scalajs.dom.RequestMode
-import sttp.model._
-import sttp.client4._
-import sttp.client4.fetch.FetchOptions
-import sttp.model.Uri
 import zio._
 import zio.app.internal.ZioResponse
+import zio.http._
 import zio.stream._
 
+import java.net.URLEncoder
 import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 object FrontendUtils {
   implicit val exPickler: CompositePickler[Throwable] = exceptionPickler
 
-  private val sttpBackend =
-    FetchZioBackend(fetchOptions = FetchOptions(credentials = None, mode = Some(RequestMode.`same-origin`)))
-
-  def apiUri(config: ClientConfig): Uri =
-    Uri(org.scalajs.dom.document.location.hostname)
-      .scheme(org.scalajs.dom.document.location.protocol.replaceAll(":", ""))
-      .port(org.scalajs.dom.document.location.port.toIntOption)
-      .addPathSegments(config.root.add("api").segments)
+  def apiPath(config: ClientConfig, service: String, method: String): Path =
+    config.root / "api" / URLEncoder.encode(service, StandardCharsets.UTF_8) / URLEncoder.encode(
+      method,
+      StandardCharsets.UTF_8
+    )
 
   def fetch[E: Pickler, A: Pickler](service: String, method: String, config: ClientConfig): IO[E, A] =
-    fetchRequest[E, A](bytesRequest.get(apiUri(config).addPath(service, method)), config)
+    fetchRequest[E, A](Request.get(apiPath(config, service, method).toString), config)
 
   def fetch[E: Pickler, A: Pickler](
     service: String,
@@ -35,17 +31,28 @@ object FrontendUtils {
     value: ByteBuffer,
     config: ClientConfig
   ): IO[E, A] =
-    fetchRequest[E, A](bytesRequest.post(apiUri(config).addPath(service, method)).body(value), config)
+    fetchRequest[E, A](
+      Request.post(
+        apiPath(config, service, method).toString,
+        Body.fromChunk(Chunk.fromByteBuffer(value))
+      ),
+      config
+    )
 
   def fetchRequest[E: Pickler, A: Pickler](
-    request: StreamRequest[Array[Byte], Any],
+    request: Request,
     config: ClientConfig
   ): IO[E, A] =
-    sttpBackend
-      .send(request.header("authorization", config.authToken.map("Bearer " + _)))
+    ZIO
+      .scoped(Client.batched(config.authToken match {
+        case None            => request
+        case Some(authToken) => request.addHeader(Header.Authorization.Bearer(authToken))
+      }))
+      .provideSomeLayer(Client.default)
+      .flatMap(_.body.asArray)
       .orDie
       .flatMap { response =>
-        Unpickle[ZioResponse[E, A]].fromBytes(ByteBuffer.wrap(response.body)) match {
+        Unpickle[ZioResponse[E, A]].fromBytes(ByteBuffer.wrap(response)) match {
           case ZioResponse.Succeed(value) =>
             ZIO.succeed(value)
           case ZioResponse.Fail(value) =>
@@ -59,7 +66,7 @@ object FrontendUtils {
       }
 
   def fetchStream[E: Pickler, A: Pickler](service: String, method: String, config: ClientConfig): Stream[E, A] =
-    fetchStreamRequest[E, A](basicRequest.get(apiUri(config).addPath(service, method)))
+    fetchStreamRequest[E, A](Request.get(apiPath(config, service, method).toString))
 
   def fetchStream[E: Pickler, A: Pickler](
     service: String,
@@ -67,19 +74,16 @@ object FrontendUtils {
     value: ByteBuffer,
     config: ClientConfig
   ): Stream[E, A] =
-    fetchStreamRequest[E, A](basicRequest.post(apiUri(config).addPath(service, method)).body(value))
+    fetchStreamRequest[E, A](
+      Request.post(apiPath(config, service, method).toString, Body.fromChunk(Chunk.fromByteBuffer(value)))
+    )
 
-  def fetchStreamRequest[E: Pickler, A: Pickler](request: Request[Either[String, String]]): Stream[E, A] =
-    ZStream.unwrap {
-      request
-        .response(asStreamAlwaysUnsafe(ZioStreams))
-        .send(sttpBackend)
-        .orDie
-        .map(resp => transformZioResponseStream[E, A](resp.body))
-    }
-
-  private def transformZioResponseStream[E: Pickler, A: Pickler](stream: ZioStreams.BinaryStream) =
-    stream
+  def fetchStreamRequest[E: Pickler, A: Pickler](request: Request): Stream[E, A] =
+    Client
+      .streamingWith(request) { response =>
+        ZStream.fromZIO(response.body.asArray)
+      }
+      .provideSomeLayer(Client.default)
       .catchAll(ZStream.die(_))
       .mapConcatChunk(a => unpickleMany[E, A](a))
       .flatMap {
@@ -88,22 +92,6 @@ object FrontendUtils {
         case ZioResponse.Die(throwable) => ZStream.die(throwable)
         case ZioResponse.Interrupt(_)   => ZStream.fromZIO(ZIO.interruptAs(FiberId(0, 0, Trace.empty)))
       }
-
-  private val bytesRequest =
-    StreamRequest[Array[Byte], Any](
-      Method.GET,
-      Uri("127.0.0.1"),
-      NoBody,
-      Vector(),
-      StreamResponseAs[Array[Byte], Any](ResponseAsByteArray),
-      RequestOptions(
-        followRedirects = true,
-        DefaultReadTimeout,
-        10,
-        redirectToGet = true
-      ),
-      Map()
-    )
 
   def unpickleMany[E: Pickler, A: Pickler](bytes: Array[Byte]): Chunk[ZioResponse[E, A]] = {
     val unpickleState                       = UnpickleState(ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN))
